@@ -8,6 +8,12 @@ EN: It was made for educational purposes only. We are not responsible for its us
 TR: Sadece eğitim amaçlı yapılmıştır. Kullanımından sorumlu değiliz!
 </pre>
 
+<!-- Geliştirme -->
+## 🖥️ Status
+<pre>
+Developing...
+</pre>
+
 <!-- Run -->
 ## 🤔 How To Run?
 <pre>
@@ -22,7 +28,7 @@ Linux/GNU:
 ## Operating System
 <pre>
 🐧 Linux/GNU
-🪟 Windows 10
+🪟 Windows
 </pre>
 
 <!-- Özellikler -->
