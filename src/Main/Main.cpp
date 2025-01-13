@@ -1,157 +1,117 @@
-// Slavnem @2024-12-15
-// Main
+/***********************************************
+ * Project Name     : Main
+ * Author           : Slavnem
+ * Date             : 15/12/2024
+ * License          : Slavnem Development License (SGL) v1.0
+ * Description      : Main
+ ***********************************************/
 #ifdef MAIN
 
 #include <iostream>
 #include <string>
-#include <vector>
 #include <cstring>
-
-#include <Ransomware/Ransomware.hpp>
-
-#include <Crypt/Crypt.hpp>
-#include <Crypt/Xor/Xor.hpp>
+#include <vector>
+#include <memory>
 
 #include <FileStream/FileStream.hpp>
 #include <FileStream/CFile/CFile.hpp>
 
+#include <Crypt/Crypt.hpp>
+#include <Crypt/Caesar/Caesar.hpp>
+#include <Crypt/Caesar/SCaesar/SCaesar.hpp>
+#include <Crypt/Bitwise/Bitwise.hpp>
+
+#include <Exception/Exception.hpp>
+
 // main
 int main(const int argc, const char* const argv[])
 {
-	// get args
-	if (argc < 4)
-	{
-		// Windows
-		#if defined(_WIN32) || defined(_WIN64)
-		std::cout
-			<< "[ERROR] How To Run: Ransomware.exe <crypt key> <encrypt or decrypt> <print or nothing> <filepath>"
-			<< "\n[INFO] Example: Ransomware.exe 36 encrypt print test/myfile.txt"
-			<< std::endl;
-		// Linux
-		#else
-		std::cout
-			<< "[ERROR] How To Run: ./Ransomware.o <crypt key> <encrypt or decrypt> <print or nothing> <filepath>"
-			<< "\n[INFO] Example: ./Ransomware.o 36 encrypt print test/myfile.txt"
-			<< std::endl;
-		#endif
-
-		return 0;
-	}
+	// not enough arguments
+	if (argc < 5)
+		return 1;
 
 	std::vector<std::string> arguments(argv, argv + argc);
-	std::string cryptKey(argv[1]);
-	std::string filepath("");
+	std::string cryptClass(argv[1]);
+	std::string cryptKey(argv[2]);
+	std::string filepath(argc > 5 ? arguments[5] : arguments[4]);
 
 	bool choiceEncrypt = false;
 	bool endPrint = false;
 
-	// encrypt key status
-	if (!Crypt::Xor::validKey(cryptKey))
-	{
-		std::cerr << "[ERROR] Encryption Key Is Invalid!" << std::endl;
-		return 0;
-	}
+	// crypt object
+	std::unique_ptr<Crypt::Crypt<std::string, std::string>> cryptObject;
+
+	// caesar
+	if (strcmp(cryptClass.data(), Crypt::Caesar::CRYPT_CAESAR) == 0)
+		cryptObject = std::make_unique<Crypt::Caesar::Caesar>(cryptKey);
+	// scaesar
+	else if (strcmp(cryptClass.data(), Crypt::Caesar::SCaesar::CRYPT_SCAESAR) == 0)
+		cryptObject = std::make_unique<Crypt::Caesar::SCaesar::SCaesar>(cryptKey);
+	// bitwise
+	else if (strcmp(cryptClass.data(), Crypt::Bitwise::CRYPT_BITWISE) == 0)
+		cryptObject = std::make_unique<Crypt::Bitwise::Bitwise>(cryptKey);
+	// unsupported
+	else
+		throw Exception::Critical("[MAIN] Unknown Crypt Class");
 
 	// encrypt or decrypt
-	choiceEncrypt = (strcmp(arguments[2].c_str(), Crypt::TEXT_ENCRYPT) == 0);
+	choiceEncrypt = (strcmp(arguments[3].data(), Crypt::CRYPT_TEXT_ENCRYPT) == 0);
 
 	// print or not print
-	if (argc > 4)
-	{
-		endPrint = (strcmp(arguments[3].c_str(), "print") == 0);
-		filepath = arguments[4];
-	}
-	else
-	{
-		filepath = arguments[3];
-	}
-
-	// crypt obj
-	Crypt::Xor::Xor cryptObject(cryptKey);
+	if (argc > 5)
+		endPrint = (strcmp(arguments[4].data(), "print") == 0);
 
 	// filestream obj
-	FileStream::CFile::CFile filestreamObject(filepath, FileStream::EFILEOPEN_READWRITE);
+	std::unique_ptr<FileStream::CFile::CFile> filestreamObject;
+	filestreamObject = std::make_unique<FileStream::CFile::CFile>(filepath, FileStream::EFILEOPEN_READWRITE);
 
-	// ransomware object
-	Ransomware::Ransomware<Crypt::Xor::Xor, FileStream::CFile::CFile> ransomwareObject
-	(
-		&cryptObject, &filestreamObject
-	);
-
-	// check ransomware obj
-	if(ransomwareObject.isErr())
+	// check err status
+	if(cryptObject->isErr() || filestreamObject->isErr())
 		exit(EXIT_FAILURE);
 
 	// encrypt or decrypt
+	std::string* data = filestreamObject->readLine(true);
+
+	// data not found
+	if(!data || data->empty())
+		goto end;
+
+	// encrypt & decrypt
 	switch (choiceEncrypt)
 	{
-		// encrypt
-		case true:
-			ransomwareObject.runEncrypt();
-			break;
-		// decrypt
-		default:
-			ransomwareObject.runDecrypt();
+		case true: // encrypt
+			while (data && !data->empty())
+			{
+				cryptObject->encrypt(data);
+
+				if (!filestreamObject->writeLine(data))
+					break;
+
+				filestreamObject->nextLine();
+				data = filestreamObject->readLine(true);
+			}
+		break;
+		default: // decrypt
+			while (data && !data->empty())
+			{
+				cryptObject->decrypt(data);
+
+				if (!filestreamObject->writeLine(data))
+					break;
+
+				filestreamObject->nextLine();
+				data = filestreamObject->readLine(true);
+			}
 	}
 
-	if (!endPrint)
-		exit(EXIT_SUCCESS);
+	end:
+		// terminate the self
+		if(!endPrint)
+			exit(EXIT_SUCCESS);
 
 	// print
-	ransomwareObject.print();
-
-	// set file position
-	/*
-	FILE* myfile = fileObj.getFile();
-	fseek(myfile, 0, SEEK_SET);
-
-	// buffer and current position
-	const uint16_t bufferSize = 512;
-	char buffer[bufferSize];
-
-	// file position
-	long currentFilePosition = ftell(myfile);
-
-	// encrypt or decrypt
-	if (flagEncrypt & static_cast<uint8_t>(Crypt::flagEncrypt))
-	{
-		// encrypt
-		while (fgets(buffer, bufferSize, myfile))
-		{
-			// convert text to string obj and encrypt the text
-			std::string data(buffer);
-			std::string encrypted = cryptObj.getEncrypt(data);
-
-			// set the old file position
-			fseek(myfile, currentFilePosition, SEEK_SET);
-
-			// write data to file
-			fileObj.write(encrypted);
-
-			// get current file position
-			currentFilePosition = ftell(myfile);
-		}
-	}
-	else
-	{
-		// decrypt
-		while (fgets(buffer, bufferSize, myfile))
-		{
-			// convert text to string obj and decrypt the text
-			std::string data(buffer);
-			std::string decrypted = cryptObj.getDecrypt(data);
-
-			// set the old file position
-			fseek(myfile, currentFilePosition, SEEK_SET);
-
-			// write data to file
-			fileObj.write(decrypted);
-
-			// get current file position
-			currentFilePosition = ftell(myfile);
-		}
-	}
-	*/
+	cryptObject->print();
+	filestreamObject->print();
 }
 
 #endif

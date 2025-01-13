@@ -1,3 +1,6 @@
+# git
+.git/
+
 # Visual Studio & VS Code
 .vs/
 .vscode/

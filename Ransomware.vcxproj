@@ -106,7 +106,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;TEST_060120250539_ENCRYPTDECRYPT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <StructMemberAlignment>4Bytes</StructMemberAlignment>
@@ -142,7 +142,7 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;TEST;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;TEST_060120250539_ENCRYPTDECRYPT;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <LanguageStandard_C>stdc11</LanguageStandard_C>
@@ -175,28 +175,33 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="include\Crypt\Bitwise\Bitwise.hpp" />
     <ClInclude Include="include\Crypt\Caesar\Caesar.hpp" />
+    <ClInclude Include="include\Crypt\Caesar\SCaesar\SCaesar.hpp" />
     <ClInclude Include="include\Crypt\Crypt.hpp" />
-    <ClInclude Include="include\Crypt\Xor\Xor.hpp" />
+    <ClInclude Include="include\Exception\Exception.hpp" />
     <ClInclude Include="include\FileStream\CFile\CFile.hpp" />
     <ClInclude Include="include\FileStream\FileStream.hpp" />
-    <ClInclude Include="include\Ransomware\Ransomware.hpp" />
+    <ClInclude Include="include\Info\Version.h" />
     <ClInclude Include="include\Test\Test.hpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="src\Crypt\Bitwise\Bitwise.cpp" />
     <ClCompile Include="src\Crypt\Caesar\Caesar.cpp" />
-    <ClCompile Include="src\Crypt\Crypt.cpp" />
-    <ClCompile Include="src\Crypt\Xor\Xor.cpp" />
+    <ClCompile Include="src\Crypt\Caesar\SCaesar\SCaesar.cpp" />
+    <ClCompile Include="src\Exception\Exception.cpp" />
     <ClCompile Include="src\FileStream\CFile\CFile.cpp" />
-    <ClCompile Include="src\FileStream\FileStream.cpp" />
     <ClCompile Include="src\Main\Main.cpp" />
-    <ClCompile Include="src\Ransomware\Ransomware.cpp" />
     <ClCompile Include="src\Test\Test.cpp" />
-    <ClCompile Include="test\25-12-2024-13-36\XorTest.cpp" />
+    <ClCompile Include="test\06-01-2025-05-39\EncryptDecryptTest.cpp" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />
     <None Include="Makefile" />
+    <None Include="README.md" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="LICENSE.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,8 +1,14 @@
-// Slavnem @2024-12-25
-// Test Src
-#include <Test/Test.hpp>
-
+/***********************************************
+ * Project Name     : Tester
+ * Author           : Slavnem
+ * Date             : 25/12/2024
+ * License          : Slavnem Development License (SGL) v1.0
+ * Description      : A class that allows you to test whether
+                      the code matches the desired results
+                      or just to test the code
+ ***********************************************/
 #include <iostream>
+#include <Test/Test.hpp>
 
 // Windows
 #if defined(_WIN32) || defined(_WIN64)
@@ -83,7 +89,7 @@ namespace Test
                     std::cout << COLOR_BLACK;
                     break;
                 case ECOLOR_RED:
-                    std::cout << RED;
+                    std::cout << COLOR_RED;
                     break;
                 case ECOLOR_GREEN:
                     std::cout << COLOR_GREEN;

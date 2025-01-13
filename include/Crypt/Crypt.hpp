@@ -1,15 +1,19 @@
-// Slavnem @2024-12-14
-// Crypt
+/***********************************************
+ * Project Name     : Crypt Encryption & Decryption Virtual Class
+ * Author           : Slavnem
+ * Date             : 14/12/2024
+ * License          : Slavnem Development License (SGL) v1.0
+ * Description      : Crypt virtual class for inheritance
+ ***********************************************/
 #ifndef CRYPT_INC_H
 #define CRYPT_INC_H
-
 
 // Crypt
 namespace Crypt
 {
 	// text
-	static inline constexpr const char* const TEXT_ENCRYPT = "encrypt";
-	static inline constexpr const char* const TEXT_DECRYPT = "decrypt";
+	inline constexpr const char* const CRYPT_TEXT_ENCRYPT = "encrypt";
+	inline constexpr const char* const CRYPT_TEXT_DECRYPT = "decrypt";
 
 	template<typename keyT, typename inputT>
 	class Crypt
@@ -27,8 +31,8 @@ namespace Crypt
 			virtual bool isErr() const = 0;
 
 			// encrypt & decrypt
-			virtual void encrypt(inputT& _data) = 0;
-			virtual void decrypt(inputT& _data) = 0;
+			virtual void encrypt(inputT* _data) = 0;
+			virtual void decrypt(inputT* _data) = 0;
 
 			// print
 			virtual void print() const = 0;

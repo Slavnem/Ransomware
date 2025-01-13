@@ -1,6 +1,11 @@
-// Slavnem @2024-12-15
-// CFile Src
-
+/***********************************************
+ * Project Name     : C Language File System
+ * Author           : Slavnem
+ * Date             : 15/12/2024
+ * License          : Slavnem Development License (SGL) v1.0
+ * Description      : A file handler class developed using the
+					  file handling structure of the C language
+ ***********************************************/
 #include <iostream>
 #include <string>
 #include <cstdio>
@@ -8,6 +13,8 @@
 
 #include <FileStream/FileStream.hpp>
 #include <FileStream/CFile/CFile.hpp>
+#include <Crypt/Crypt.hpp>
+#include <Exception/Exception.hpp>
 
 // FileStream::CFile
 namespace FileStream
@@ -15,62 +22,102 @@ namespace FileStream
 	namespace CFile
 	{
 		// flag
-		static inline constexpr uint8_t FILE_FLAG_NULL = (0 << 0);
-		static inline constexpr uint8_t FILE_FLAG_OPEN = (1 << 0);
-		static inline constexpr uint8_t FILE_FLAG_CLOSED = (1 << 1);
-		static inline constexpr uint8_t FILE_FLAG_ERROR = (1 << 2);
-		static inline constexpr uint8_t FILE_FLAG_WRITABLE = (1 << 3);
-		static inline constexpr uint8_t FILE_FLAG_READABLE = (1 << 4);
+		static inline constexpr uint8_t CFILE_FLAG_NULL = (0 << 0);
+		static inline constexpr uint8_t CFILE_FLAG_OPEN = (1 << 0);
+		static inline constexpr uint8_t CFILE_FLAG_CLOSED = (1 << 1);
+		static inline constexpr uint8_t CFILE_FLAG_ERR = (1 << 2);
+		static inline constexpr uint8_t CFILE_FLAG_WRITABLE = (1 << 3);
+		static inline constexpr uint8_t CFILE_FLAG_READABLE = (1 << 4);
 
-		// max & min
-		static inline constexpr uint32_t PATH_LEN_MIN = 1;
-		static inline constexpr uint32_t PATH_LEN_MAX = UINT32_MAX;
+		// mode
+		static inline constexpr const char* const FILE_MODE_NULL = "";
+
+		static inline constexpr const char* const FILE_MODE_WRITE = "w";
+		static inline constexpr const char* const FILE_MODE_WRITEBIN = "wb";
+		static inline constexpr const char* const FILE_MODE_WRITEREAD = "w+";
+		static inline constexpr const char* const FILE_MODE_WRITEREADBIN = "wb+";
+
+		static inline constexpr const char* const FILE_MODE_READ = "r";
+		static inline constexpr const char* const FILE_MODE_READBIN = "rb";
+		static inline constexpr const char* const FILE_MODE_READWRITE = "r+";
+		static inline constexpr const char* const FILE_MODE_READWRITEBIN = "rb+";
+
+		static inline constexpr const char* const FILE_MODE_ADD = "a";
+		static inline constexpr const char* const FILE_MODE_ADDBIN = "ab";
+		static inline constexpr const char* const FILE_MODE_ADDREAD = "a+";
+		static inline constexpr const char* const FILE_MODE_ADDREADBIN = "ab+";
+
+		// buffer size
+		static inline constexpr size_t BUFFER_SIZE = 4096;
 
 		// buffer
-		static inline constexpr uint16_t BUFFER_SIZE = 512;
+		static inline std::string buffer("", BUFFER_SIZE);
+
+		// isPathValid
+		bool isPathValid(const std::string& _path)
+		{
+			return (!_path.empty() && _path.length() > 0);
+		}
 
 		// constructor
-		CFile::CFile(std::string& _filepath, const fileopentype_t _opentype)
+		CFile::CFile(const std::string& _filepath, const fileopentype_t _opentype)
 			: opentype(EFILEOPEN_NULL),
 			path(""),
 			file(nullptr),
-			flag(FILE_FLAG_ERROR)
+			flag(CFILE_FLAG_ERR)
 		{
+			if (!isPathValid(_filepath))
+				throw Exception::Basic("[CFile] Filepath is not valid");
+
 			setPath(_filepath);
 			setFile(_opentype);
 
 			// file validation
 			if (!hasFile())
-			{
-				// throw msg handler
-				std::cerr << "[FileStream::CFile] File Not Opened" << std::endl;
-				return;
-			}
+				throw Exception::Critical("[CFile] File could not open");
 
 			// reset the flag
 			resetFlag();
 		}
 
+		// destructor
+		CFile::~CFile()
+		{
+			closeFile();
+		}
+
 		// hasPath
 		bool CFile::hasPath() const
 		{
-			return !path.empty();
+			return isPathValid(this->path);
 		}
 
 		// hasFile
 		bool CFile::hasFile() const
 		{
-			return file != nullptr;
+			return (file != nullptr);
+		}
+
+		// isReadable
+		bool CFile::isReadable() const
+		{
+			return (flag & CFILE_FLAG_READABLE);
+		}
+
+		// isWritable
+		bool CFile::isWritable() const
+		{
+			return (flag & CFILE_FLAG_WRITABLE);
 		}
 
 		// isErr
 		bool CFile::isErr() const
 		{
-			return (flag & FILE_FLAG_ERROR);
+			return (flag & CFILE_FLAG_ERR);
 		}
 
 		// setPath
-		void CFile::setPath(std::string& _filepath)
+		void CFile::setPath(const std::string& _filepath)
 		{
 			path = (!_filepath.empty() ? _filepath : "");
 		}
@@ -82,13 +129,9 @@ namespace FileStream
 			if (!hasPath())
 			{
 				resetFlag();
-				setFlag(FILE_FLAG_ERROR);
+				setFlag(CFILE_FLAG_ERR);
 
-				std::cerr << "[FileStream::CFile::SetFile] File Path Length Can Be Min"
-					<< static_cast<int>(PATH_LEN_MIN) << " Letter"
-					<< std::endl;
-
-				return;
+				throw Exception::Basic("[CFile:SetFile] File path length can be min " + std::to_string(FILE_PATH_LEN_MIN) + " letter");
 			}
 
 			// file open type control
@@ -97,95 +140,91 @@ namespace FileStream
 			switch (_opentype)
 			{
 				case EFILEOPEN_READ:  // only read
-					mode = "r";
+					mode = FILE_MODE_READ;
 					break;
-				case EFILEOPEN_READBIN:  // only read (binary)
-					mode = "rb";
+				// case EFILEOPEN_READBIN:  // only read (binary)
+					mode = FILE_MODE_READBIN;
 					break;
 				case EFILEOPEN_READWRITE:  // read and write
-					mode = "r+";
+					mode = FILE_MODE_READWRITE;
 					break;
-				case EFILEOPEN_READWRITEBIN:  // read and write (binary)
-					mode = "rb+";
+				// case EFILEOPEN_READWRITEBIN:  // read and write (binary)
+					mode = FILE_MODE_READWRITEBIN;
 					break;
 				case EFILEOPEN_WRITE:  // only write
-					mode = "w";
+					mode = FILE_MODE_WRITE;
 					break;
-				case EFILEOPEN_WRITEBIN:  // only write (binary)
-					mode = "wb";
+				// case EFILEOPEN_WRITEBIN:  // only write (binary)
+					mode = FILE_MODE_WRITEBIN;
 					break;
 				case EFILEOPEN_WRITEREAD:  // write and read
-					mode = "w+";
+					mode = FILE_MODE_WRITEREAD;
 					break;
-				case EFILEOPEN_WRITEREADBIN:  // write and read (binary)
-					mode = "wb+";
+				// case EFILEOPEN_WRITEREADBIN:  // write and read (binary)
+					mode = FILE_MODE_WRITEREADBIN;
 					break;
 				case EFILEOPEN_ADD:  // only add
-					mode = "a";
+					mode = FILE_MODE_ADD;
 					break;
-				case EFILEOPEN_ADDBIN:  // only add (binary)
-					mode = "ab";
+				// case EFILEOPEN_ADDBIN:  // only add (binary)
+					mode = FILE_MODE_ADDBIN;
 					break;
 				case EFILEOPEN_ADDREAD:  // add and read
-					mode = "a+";
+					mode = FILE_MODE_ADDREAD;
 					break;
-				case EFILEOPEN_ADDREADBIN:  // add and read (binary)
-					mode = "ab+";
+				// case EFILEOPEN_ADDREADBIN:  // add and read (binary)
+					mode = FILE_MODE_ADDREADBIN;
 					break;
 				default:
 					resetFlag();
-					setFlag(FILE_FLAG_ERROR);
+					setFlag(CFILE_FLAG_ERR);
 
-					std::cerr << "[FileStream::CFile::SetFile] File Couldn't Open, Check The File Exist" << std::endl;
-					return;
+					throw Exception::Basic("[CFile:SetFile] Unsupported file open type");
 			}
 
 			// Windows x86/64
 			#if defined(_WIN32) || defined(_WIN64) // SECURE
-				if (fopen_s(&file, getPath(), mode.c_str()) != 0)
+				if (fopen_s(&file, getPath().c_str(), mode.c_str()) != 0)
 					file = nullptr;
 			// Linux x86/64
 			#else // NON SECURE
-				if ((file = fopen(getPath(), mode.c_str())) == NULL)
+				if ((file = fopen(getPath().c_str(), mode.c_str())) == nullptr)
 					file = nullptr;
 			#endif
 
 			// file validation
 			if (!hasFile())
-			{
-				std::cerr << "[FileStream::CFile::SetFile] File Couldn't Open, Check The File Exist" << std::endl;
-				return;
-			}
+				throw Exception::Basic("[CFile:SetFile] File could not open, check if the file exists");
 
 			// set flag
 			switch (_opentype)
 			{
 				// both
 				case EFILEOPEN_WRITEREAD:
-				case EFILEOPEN_WRITEREADBIN:
+				// case EFILEOPEN_WRITEREADBIN:
 				case EFILEOPEN_ADDREAD:
-				case EFILEOPEN_ADDREADBIN:
+				// case EFILEOPEN_ADDREADBIN:
 				case EFILEOPEN_READWRITE:
-				case EFILEOPEN_READWRITEBIN:
-					setFlag(FILE_FLAG_OPEN);
-					setFlag(FILE_FLAG_READABLE);
-					setFlag(FILE_FLAG_WRITABLE);
+				// case EFILEOPEN_READWRITEBIN:
+					setFlag(CFILE_FLAG_OPEN);
+					setFlag(CFILE_FLAG_READABLE);
+					setFlag(CFILE_FLAG_WRITABLE);
 					break;
 
 				// only readable
 				case EFILEOPEN_READ:
-				case EFILEOPEN_READBIN:
-					setFlag(FILE_FLAG_OPEN);
-					setFlag(FILE_FLAG_READABLE);
+				// case EFILEOPEN_READBIN:
+					setFlag(CFILE_FLAG_OPEN);
+					setFlag(CFILE_FLAG_READABLE);
 					break;
 
 				// only writable
 				case EFILEOPEN_WRITE:
-				case EFILEOPEN_WRITEBIN:
+				// case EFILEOPEN_WRITEBIN:
 				case EFILEOPEN_ADD:
-				case EFILEOPEN_ADDBIN:
-					setFlag(FILE_FLAG_OPEN);
-					setFlag(FILE_FLAG_WRITABLE);
+				// case EFILEOPEN_ADDBIN:
+					setFlag(CFILE_FLAG_OPEN);
+					setFlag(CFILE_FLAG_WRITABLE);
 					break;
 
 				// null
@@ -196,83 +235,127 @@ namespace FileStream
 		}
 
 		// getPath
-		const char* CFile::getPath() const
+		const std::string& CFile::getPath() const
 		{
-			return static_cast<const char*>(path.c_str());
+			return path;
 		}
 
 		// getFile
-		FILE* CFile::getFile()
+		const FILE* CFile::getFile()
 		{
 			return file;
 		}
 
-		// write
-		void CFile::write(const std::string& _text)
+		// getFlag
+		uint8_t CFile::getFlag() const
 		{
-			// file not found
-			if (!hasFile())
-				return;
-
-			// write and don't cache
-			fprintf(file, "%s", _text.c_str());
-			fflush(file);
+			return flag;
 		}
 
-		// read
-		const char* CFile::read()
+		// setFlag
+		void CFile::setFlag(const uint8_t _flag)
+		{
+			flag |= _flag;
+		}
+
+		// resetFlag
+		void CFile::resetFlag()
+		{
+			flag = CFILE_FLAG_NULL;
+		}
+
+		// removeFlag
+		void CFile::removeFlag(const uint8_t _flag)
+		{
+			flag &= ~_flag;
+		}
+
+		// readLine
+		std::string* CFile::readLine(const bool _setoldpos)
 		{
 			// check the if file is exist
 			if (!hasFile())
-			{
-				std::cerr << "[FileStream::CFile::Read] A File Must Exist To Be Readable" << std::endl;
+				throw Exception::Critical("[CFile:ReadLine] A file must exist to be readable");
+
+			// file pos
+			long currentFilePos = ftell(file);
+
+			// temporarily read and save data
+			char temp[BUFFER_SIZE];
+			if (!fgets(temp, BUFFER_SIZE, file))
 				return nullptr;
-			}
 
-    		// buffer for reading file line
-			char* buffer = nullptr;
+			// assign data to buffer
+			buffer.assign(temp);
 
-			// mem allocation for buffer
-			try
-			{
-				buffer = new char[BUFFER_SIZE];
-			}
-			catch(...)
-			{
-				std::cerr << "[FileStream::CFile::Read] Mem Couldn't Alloc For Read Buffer" << std::endl;
-				return nullptr;
-			}
+			// set the old pos
+			if(_setoldpos)
+				fseek(file, currentFilePos, SEEK_SET);
 
-    		if (fgets(buffer, BUFFER_SIZE, getFile()) == nullptr)
-			{
-				std::cerr << "[FileStream::CFile::Read] Failed To Read From File" << std::endl;
-				return nullptr;
-			}
-
-    		// unchangeable text
-    		return buffer;
+			// changeable text
+			return &buffer;
 		}
 
-		// close
-		void CFile::close()
+		// writeLine
+		bool CFile::writeLine(const std::string* _text)
+		{
+			// file not found
+			if (!hasFile())
+				throw Exception::Critical("[CFile:WriteLine] A file must exist to be writable");
+
+			// check the ptr
+			if (!_text || _text->empty())
+				return false;
+
+			// write and don't cache
+			// Windows x86/64
+			#if defined(_WIN32) || defined(_WIN64) // SECURE
+				if (fprintf_s(file, "%s", _text->data()) < 0)
+					return false;
+			// Linux x86/64
+			#else // NON SECURE
+				if(fprintf(file, "%s", _text->data()) < 0)
+					return false;
+			#endif
+
+			// write data directly to file without saving to buffer
+			return (fflush(file) == 0);
+		}
+
+		// nextLine
+		bool CFile::nextLine()
+		{
+			// file not found
+			if (!hasFile())
+				throw Exception::Critical("[CFile:NextLine] A file must exist to go nextline");
+
+			// temporarily read data for nextline
+			char temp[BUFFER_SIZE];
+			return (fgets(temp, BUFFER_SIZE, file));
+		}
+
+		// closeFile
+		void CFile::closeFile()
 		{
 			// file already closed
 			if (!hasFile())
-				return;
+				throw Exception::Message("[CFile:CloseFile] File already closed :)");
 
-			fclose(file); // close the file
+			// close the file
+			fclose(file);
 			file = nullptr;
 		}
 
 		// print
 		void CFile::print() const
 		{
-			std::cout << "\n==========" << std::internal << " FILE " << "=========="
-				<< "\nPath: " << (hasPath() ? getPath() : "Null")
-				<< "\nOpen: " << (hasFile() ? "Yes" : "No")
-				<< "\nReadable: " << (hashFlag(FILE_FLAG_READABLE) ? "Yes" : "No")
-				<< "\nWritable: " << (hashFlag(FILE_FLAG_WRITABLE) ? "Yes" : "No")
-				<< "\nError: " << (hashFlag(FILE_FLAG_ERROR) ? "Yes" : "No")
+			// We output encryption type, key, encryption status, decryption status
+			std::cout << "\n========== CFILE =========="
+				<< "\nPath: " << (this->getPath().data())
+				<< "\nOpen: " << ((this->isReadable() || this->isWritable()) ? "Yes" : "No")
+				<< "\nReadable: " << (this->isReadable() ? "Yes" : "No")
+				<< "\nWritable: " << (this->isWritable() ? "Yes" : "No")
+				<< "\nError: " << (this->isErr() ? "Yes" : "No")
 				<< std::endl;
 		}
 	}

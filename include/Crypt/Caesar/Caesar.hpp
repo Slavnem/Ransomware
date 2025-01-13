@@ -1,5 +1,13 @@
-// Slavnem @2024-12-14
-// Caesar
+/***********************************************
+ * Project Name     : Customized Caesar Encryption & Decryption
+ * Author           : Slavnem
+ * Date             : 14/12/2024
+ * License          : Slavnem Development License (SGL) v1.0
+ * Description      : Customized Caesar encryption method that
+					  encrypts and decrypts by key number to encrypt
+					  ASCII text without exceeding the ASCII
+					  character limit ASCII character limit
+ ***********************************************/
 #ifndef CRYPT_CAESAR_INC_H
 #define CRYPT_CAESAR_INC_H
 
@@ -14,18 +22,30 @@ namespace Crypt
 {
 	namespace Caesar
 	{
-		// validation
-		bool validKey(const intmax_t _key);
+		// name
+		inline constexpr const char* const CRYPT_CAESAR = "caesar";
+
+		// key
+		inline constexpr const char* const CAESAR_KEY_NULL = "";
+
+		// flags
+		inline constexpr uint8_t CAESAR_FLAG_NULL = (0 << 0);
+		inline constexpr uint8_t CAESAR_FLAG_ENCRYPT = (1 << 0);
+		inline constexpr uint8_t CAESAR_FLAG_DECRYPT = (1 << 1);
+		inline constexpr uint8_t CAESAR_FLAG_ERR = (1 << 2);
+
+		// is validation
+		bool isKeyValid(const std::string& _key);
 
 		// Caesar
-		class Caesar : public Crypt<uint8_t, std::string>
+		class Caesar : public Crypt<std::string, std::string>
 		{
 			private:
-				uint8_t key; // encryption, decryption key
+				std::string key; // encryption, decryption key
 				uint8_t flag;
 
 				Caesar() = default; // block for create new public object
-				static std::shared_ptr<Caesar> instance;
+				static std::unique_ptr<Caesar> instance;
 
 			public:
 				// block the assign operator
@@ -33,51 +53,42 @@ namespace Crypt
 				Caesar& operator=(const Caesar&) = delete;
 
 				// constructor
-				explicit Caesar(const uint8_t key);
+				explicit Caesar(const std::string& key);
+
+				// destructor
+				virtual ~Caesar() = default;
 
 				// has validation
-				bool hasKey() const override;
+				virtual bool hasKey() const override;
 
 				// is validation
-				bool isEncrypt() const override;
-				bool isDecrypt() const override;
-				bool isErr() const override;
+				virtual bool isEncrypt() const override;
+				virtual bool isDecrypt() const override;
+				virtual bool isErr() const override;
 
 				// setKey
-				void setKey(const uint8_t _key);
+				virtual void setKey(const std::string& _key);
 
 				// encrypt, decrypt
-				void encrypt(std::string& _text) override;
-				void decrypt(std::string& _text) override;
+				virtual void encrypt(std::string* _text) override;
+				virtual void decrypt(std::string* _text) override;
 
 				// singleton
-				static Caesar& getInstance(const uint8_t _shift = 0);
+				static const Caesar& getInstance(const std::string& _key = "");
 				static void deleteInstance();
 
 				// print
-				void print() const override;
-
-				// set flag
-				inline void setFlag(const uint8_t _flag)
-				{
-					flag |= _flag;
-				}
-
-				// remove flag
-				inline void removeFlag(const uint8_t _flag)
-				{
-					flag &= ~_flag;
-				}
-
-				// reset flag
-				inline void resetFlag()
-				{
-					flag = 0;
-				}
+				virtual void print() const override;
 
 			protected:
 				// get key
-				uint8_t getKey() const;
+				virtual const std::string& getKey() const;
+
+				// get, set, reset, remove flag
+				virtual uint8_t getFlag() const;
+				virtual void setFlag(const uint8_t _flag);
+				virtual void resetFlag();
+				virtual void removeFlag(const uint8_t _flag);
 		};
 	}
 }

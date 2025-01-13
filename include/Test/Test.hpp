@@ -1,5 +1,12 @@
-// Slavnem @2024-12-25
-// Test
+/***********************************************
+ * Project Name     : Tester
+ * Author           : Slavnem
+ * Date             : 25/12/2024
+ * License          : Slavnem Development License (SGL) v1.0
+ * Description      : A class that allows you to test whether
+                      the code matches the desired results
+                      or just to test the code
+ ***********************************************/
 #ifndef TEST_INC_H
 #define TEST_INC_H
 

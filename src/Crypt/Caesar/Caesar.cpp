@@ -1,60 +1,51 @@
-// Slavnem @2024-12-14
-// Caesar Src
+/***********************************************
+ * Project Name     : Basic Caesar Encryption & Decryption
+ * Author           : Slavnem
+ * Date             : 14/12/2024
+ * License          : Slavnem Development License (SGL) v1.0
+ * Description      : Basic Caesar encryption method that
+					  encrypts and decrypts by key number to encrypt
+					  ASCII text without exceeding the ASCII
+					  character limit ASCII character limit
+ ***********************************************/
 #include <iostream>
 #include <memory>
 
 #include <Crypt/Caesar/Caesar.hpp>
+#include <Exception/Exception.hpp>
 
 // Crypt::Caesar
 namespace Crypt
 {
 	namespace Caesar
 	{
-		// max & min
-		static inline constexpr uint8_t CAESAR_KEY_MIN = 1;
-		static inline constexpr uint8_t CAESAR_KEY_MAX = 255;
-		static inline constexpr uint8_t CAESAR_KEY_DIFF = (CAESAR_KEY_MAX - CAESAR_KEY_MIN);
-		static inline constexpr uint8_t CAESAR_KEY_NULL = (0 < CAESAR_KEY_MIN ? 0 : CAESAR_KEY_MIN - 1);
+		// default singleton instance
+		std::unique_ptr<Caesar> Caesar::instance = nullptr;
 
-		// flags
-		static inline constexpr uint8_t CAESAR_FLAG_NULL = (0 << 0);
-		static inline constexpr uint8_t CAESAR_FLAG_ENCRYPT = (1 << 0);
-		static inline constexpr uint8_t CAESAR_FLAG_DECRYPT = (1 << 1);
-		static inline constexpr uint8_t CAESAR_FLAG_ERR = (1 << 2);
-
-		// validKey
-		bool validKey(const intmax_t _key)
+		// isKeyValid
+		bool isKeyValid(const std::string& _key)
 		{
-			return (_key >= CAESAR_KEY_MIN && _key <= CAESAR_KEY_MAX);
+			return (!_key.empty() && _key.length() > 0);
 		}
 
-		// default singleton instance
-		std::shared_ptr<Caesar> Caesar::instance = nullptr;
-
 		// constructor
-		Caesar::Caesar(const uint8_t _key)
+		Caesar::Caesar(const std::string& _key)
 			: key(CAESAR_KEY_NULL),
 			flag(CAESAR_FLAG_ERR)
 		{
 			// check if the key is valid
-			if (!validKey(_key))
-			{
-				std::cerr << "[Crypt::Caesar] Crypt Key Has To Be Between "
-					<< static_cast<int>(CAESAR_KEY_MIN) << " And " << static_cast<int>(CAESAR_KEY_MAX)
-					<< std::endl;
-
-				return;
-			}
+			if (!isKeyValid(_key))
+				throw Exception::Basic("[Caesar] Crypt Key Cannot Be Empty");
 
 			// set the valid key and reset the flag
-			resetFlag();
-			setKey(_key);
+			this->resetFlag();
+			this->setKey(_key);
 		}
 
 		// hasKey
 		bool Caesar::hasKey() const
 		{
-			return validKey(static_cast<intmax_t>(key));
+			return isKeyValid(key);
 		}
 
 		// isEncrypt
@@ -76,63 +67,123 @@ namespace Crypt
 		}
 
 		// setKey
-		void Caesar::setKey(const uint8_t _key)
+		void Caesar::setKey(const std::string& _key)
 		{
-			key = validKey(_key) ? _key : CAESAR_KEY_NULL;
+			key = isKeyValid(_key) ? _key : CAESAR_KEY_NULL;
 		}
 
 		// getKey
-		uint8_t Caesar::getKey() const
+		const std::string& Caesar::getKey() const
 		{
 			return key;
 		}
 
-		// encrypt
-		void Caesar::encrypt(std::string& _text)
+		// getFlag
+		uint8_t Caesar::getFlag() const
 		{
-			if (_text.empty())
-			{
-				resetFlag();
-				setFlag(CAESAR_FLAG_ERR);
+			return flag;
+		}
 
-				std::cerr << "[Crypt::Caesar::Encrypt] Input Text Cannot Be Empty" << std::endl;
+		// setFlag
+		void Caesar::setFlag(const uint8_t _flag)
+		{
+			flag |= _flag;
+		}
+
+		// resetFlag
+		void Caesar::resetFlag()
+		{
+			flag = CAESAR_FLAG_NULL;
+		}
+
+		// removeFlag
+		void Caesar::removeFlag(const uint8_t _flag)
+		{
+			flag &= ~_flag;
+		}
+
+		// encrypt
+		/*
+			Formula: Letter + Key
+			Description: Basic Caesar encryption
+		*/
+		void Caesar::encrypt(std::string* _text)
+		{
+			// for the operation has to be ptr variable and text
+			if (!_text || _text->empty())
 				return;
-			}
 
-			const size_t lengthText = _text.length();
+			// using a temporary variable for easy access to the key's data
+			const std::string& key = getKey();
+    		if (key.empty())
+    		    return;
+
+			// instead of accessing variables with a continuous
+			// function and losing time, we temporarily store
+			// them in fixed variables
+			const size_t lengthText = _text->length();
+    		const size_t lengthKey = key.length();
+    		const char* const cryptKey = key.data();
+
+			// loop for processing from the beginning to the end of the text
 			for (size_t i = 0; i < lengthText; i++)
 			{
-				_text[i] = static_cast<uint8_t>(((_text[i] + getKey()) % CAESAR_KEY_DIFF) + CAESAR_KEY_MIN);
+				// we move on to the next round when we encounter
+				// some minor characters that might cause problems
+				if ((*_text)[i] == '\n' || (*_text)[i] == ' ')
+					continue;
+
+				// encryption with formula
+				(*_text)[i] += cryptKey[i % lengthKey];
 			}
 
-			removeFlag(CAESAR_FLAG_DECRYPT);
-			setFlag(CAESAR_FLAG_ENCRYPT);
+			// setting end-of-process flags
+			this->removeFlag(CAESAR_FLAG_DECRYPT);
+			this->setFlag(CAESAR_FLAG_ENCRYPT);
 		}
 
 		// decrypt
-		void Caesar::decrypt(std::string& _text)
+		/*
+			Formula: Encrypted Key - Key
+			Description: Basic Caesar decryption
+		*/
+		void Caesar::decrypt(std::string* _text)
 		{
-			if (_text.empty())
-			{
-				resetFlag();
-				setFlag(CAESAR_FLAG_NULL);
-
-				std::cerr << "[Crypt::Caesar::Decrypt] Input Text Cannot Be Empty" << std::endl;
+			// for the operation has to be ptr variable and text
+			if (!_text || _text->empty())
 				return;
-			}
 
-			const size_t lengthText = _text.length();
+			// using a temporary variable for easy access to the key's data
+			const std::string& key = getKey();
+    		if (key.empty())
+    		    return;
+
+			// instead of accessing variables with a continuous
+			// function and losing time, we temporarily store
+			// them in fixed variables
+			const size_t lengthText = _text->length();
+    		const size_t lengthKey = key.length();
+    		const char* const cryptKey = key.data();
+
+			// loop for processing from the beginning to the end of the text
 			for (size_t i = 0; i < lengthText; i++)
 			{
-				_text[i] = static_cast<uint8_t>((((_text[i] - CAESAR_KEY_MIN) + CAESAR_KEY_DIFF) - getKey()) % CAESAR_KEY_DIFF);
+				// we move on to the next round when we encounter
+				// some minor characters that might cause problems
+				if ((*_text)[i] == '\n' || (*_text)[i] == ' ')
+					continue;
+
+				// decryption with formula
+				(*_text)[i] -= cryptKey[i % lengthKey];
 			}
 
-			removeFlag(CAESAR_FLAG_ENCRYPT);
-			setFlag(CAESAR_FLAG_DECRYPT);
+			// setting end-of-process flags
+			this->removeFlag(CAESAR_FLAG_ENCRYPT);
+			this->setFlag(CAESAR_FLAG_DECRYPT);
 		}
 
-		// get instance
-		Caesar& Caesar::getInstance(const uint8_t _key)
+		// getInstance
+		const Caesar& Caesar::getInstance(const std::string& _key)
 		{
 			// obj already has, return it
 			if (instance)
@@ -143,19 +194,21 @@ namespace Crypt
 			return *instance;
 		}
 
-		// delete instance
+		// deleteInstance
 		void Caesar::deleteInstance()
 		{
-			instance.reset(); // delete unique_ptr, will delete object auto
+			// delete unique_ptr, will delete object auto
+			instance.reset();
 		}
 
 		// print
 		void Caesar::print() const
 		{
-			std::cout << "========== " << "CAESAR" << " =========="
-				<< "\nKey: " << (hasKey() ? getKey() : CAESAR_KEY_NULL)
-				<< "\nEncrypt: " << (isEncrypt() ? "Yes" : "No")
-				<< "\nDecrypt: " << (isDecrypt() ? "Yes" : "No")
+			// We output encryption type, key, encryption status, decryption status
+			std::cout << "\n========== CAESAR =========="
+				<< "\nKey: " << (this->getKey().data())
+				<< "\nEncrypt: " << (this->isEncrypt() ? "Yes" : "No")
+				<< "\nDecrypt: " << (this->isDecrypt() ? "Yes" : "No")
 				<< std::endl;
 		}
 	}

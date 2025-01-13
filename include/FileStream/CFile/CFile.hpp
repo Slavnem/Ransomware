@@ -1,5 +1,11 @@
-// Slavnem @2024-12-15
-// CFile
+/***********************************************
+ * Project Name     : C Language File System
+ * Author           : Slavnem
+ * Date             : 15/12/2024
+ * License          : Slavnem Development License (SGL) v1.0
+ * Description      : A file handler class developed using the
+					  file handling structure of the C language
+ ***********************************************/
 #ifndef FILESTREAM_CFILE_INC_H
 #define FILESTREAM_CFILE_INC_H
 
@@ -7,14 +13,17 @@
 #include <cstdio>
 #include <string>
 
-#include "../FileStream.hpp"
+#include <FileStream/FileStream.hpp>
 
 // FileStream::CFile
 namespace FileStream
 {
 	namespace CFile
 	{
-		class CFile : public FileStream<FILE, std::string, const char*>
+		// is path valid
+		bool isPathValid(const std::string& _path);
+
+		class CFile : public FileStream<FILE, std::string, std::string>
 		{
 			private:
 				fileopentype_t opentype;
@@ -24,54 +33,52 @@ namespace FileStream
 
 				CFile() = default; // block for create new public object
 
-				// setFlag
-				inline void setFlag(const uint8_t _flag)
-				{
-					flag |= _flag;
-				}
-
-				// resetFlag
-				inline void resetFlag()
-				{
-					flag = 0;
-				}
-
-				// clearFlag
-				inline void clearFlag(const uint8_t _flag)
-				{
-					flag &= ~_flag;
-				}
-
-				// hashFlag
-				inline constexpr bool hashFlag(const uint8_t _flag) const
-				{
-					return (flag & _flag);
-				}
-
 				// set
-				void setPath(std::string& _filepath) override;
-				void setFile(const fileopentype_t _opentype) override;
+				virtual void setPath(const std::string& _filepath) override;
+				virtual void setFile(const fileopentype_t _opentype) override;
 
 			public:
+				// block
+				CFile(const CFile&) = delete;
+
 				// constructor
-				explicit CFile(std::string& _filepath, const fileopentype_t _opentype);
+				explicit CFile(const std::string& _filepath, const fileopentype_t _opentype);
+
+				// destructor
+				~CFile();
 
 				// has validation
-				bool hasPath() const override;
-				bool hasFile() const override;
+				virtual bool hasPath() const override;
+				virtual bool hasFile() const override;
 
 				// is validation
-				bool isErr() const override;
+				virtual bool isReadable() const override;
+				virtual bool isWritable() const override;
+				virtual bool isErr() const override;
 
 				// get
-				const char* getPath() const override;
-				FILE* getFile() override;
+				virtual const std::string& getPath() const override;
 
-				// abstract
-				void write(const std::string& _text) override;
-				const char* read() override;
-				void close() override;
-				void print() const override;
+				// line
+				virtual std::string* readLine(const bool _setoldpos = 0) override;
+				virtual bool writeLine(const std::string* _text) override;
+				virtual bool nextLine() override;
+
+				// close
+				virtual void closeFile() override;
+
+				// print
+				virtual void print() const override;
+
+			protected:
+				// get file
+				virtual const FILE* getFile() override;
+
+				// get, set, reset, remove flag
+				virtual uint8_t getFlag() const;
+				virtual void setFlag(const uint8_t _flag);
+				virtual void resetFlag();
+				virtual void removeFlag(const uint8_t _flag);
 		};
 	}
 }
